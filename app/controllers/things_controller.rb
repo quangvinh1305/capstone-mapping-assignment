@@ -4,7 +4,7 @@ class ThingsController < ApplicationController
   before_action :set_thing, only: [:show, :update, :destroy]
   before_action :authenticate_user!, only: [:create, :update, :destroy]
   wrap_parameters :thing, include: ["name", "description", "notes"]
-  after_action :verify_authorized
+  after_action :verify_authorized, except: :search
   after_action :verify_policy_scoped, only: [:index]
 
   def index
@@ -13,6 +13,16 @@ class ThingsController < ApplicationController
     @things = ThingPolicy.merge(things)
   end
 
+  def search
+    @things = Thing.with_type(search_params[:type_id])
+  end
+
+  def search_params
+    params.tap { |p|
+      p.require(:type_id)
+    }.permit(:type_id)
+  end
+  
   def show
     authorize @thing
     things = ThingPolicy::Scope.new(current_user,
